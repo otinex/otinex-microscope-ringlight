@@ -1,4 +1,4 @@
-#include <FastLED.h>
+#include <FAB_LED.h>
 #include <Button.h>
 
 #define LED_PIN     1
@@ -10,8 +10,8 @@
 #define INTENSITY_PIN 3
 #define MODE_BTN 0 //Pin 6 on Arduino Mega!!!
 
-
-CRGB leds[NUM_LEDS];
+sk6812<D, 1> ring;
+rgbw leds[NUM_LEDS] = {};
 Button button = Button(MODE_BTN,BUTTON_PULLDOWN);
 bool LastButtonState = false, transition = false;;
 typedef enum mode {normalMode, movingMode} mode_t;
@@ -20,11 +20,7 @@ int ButonState = false;
 void setup() {
 
   pinMode(MODE_BTN, INPUT);
-  FastLED.addLeds<LED_TYPE, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
-    for (size_t i = 0; i < NUM_LEDS; i++)
-  {
-    leds[i] = CRGB::White;
-  } 
+
 }
 mode_t mode = normalMode;
 
@@ -50,17 +46,18 @@ if(ButtonState != LastButtonState)
      }
              break;
   }
-  
-  FastLED.setBrightness(getBrightnessSP());
-  FastLED.show();
   LastButtonState = ButtonState;
-}
+  delay(10);
+  }
 
 
 void setBrightness(uint8_t brightness) {
   for (size_t i = 0; i < NUM_LEDS; i++)
   {
-    leds[i].setRGB(brightness, brightness, brightness);
+  leds[i].r = brightness;
+	leds[i].g = brightness;
+	leds[i].b = brightness;
+	leds[i].w = brightness;
   }
 }
 
@@ -70,28 +67,33 @@ void MovingMode()
   
   for (size_t i = 0; i < NUM_LEDS; i++)
   {
-    if ( i < getPositionSP() || i > getPositionSP() +4)
+    setBrightness(0);
+    int brightness = getBrightnessSP();
+  for (size_t i = 0; i < 4; i++)
     {
-    leds[i] = CRGB::Black;
+    int idx_ = (getPositionSP() + i)%NUM_LEDS;
+    leds[idx_].r = brightness;
+    leds[idx_].g = brightness;
+    leds[idx_].b = brightness;
+    leds[idx_].w = brightness;
     }
-    else 
-    {
-      leds[i] = CRGB::White;
-    }
-  }
+    ring.sendPixels(NUM_LEDS, leds);
   if (transition == true){mode = normalMode;}
   transition = false;  
+}
 }
 
 void NormalMode()
 { 
-  for(size_t i = 0; i< NUM_LEDS; i++)
-  {
-    leds[i] = CRGB::White;
-  }
-  if (transition == true){mode = movingMode;}
+  setBrightness(getBrightnessSP());
+  ring.sendPixels(NUM_LEDS, leds);
+  if (transition == true){
+    
+    mode = movingMode;}
   transition = false;
 }
+
+
 
 int getBrightnessSP(){
   
