@@ -14,8 +14,9 @@ sk6812<D, 1> ring;
 rgbw leds[NUM_LEDS] = {};
 Button button = Button(MODE_BTN,BUTTON_PULLDOWN);
 bool LastButtonState = false, transition = false;;
-typedef enum mode {normalMode, movingMode} mode_t;
+typedef enum mode {normalMode, movingMode, offMode} mode_t;
 int ButonState = false;
+int avgfac = 100;
 
 void setup() {
 
@@ -36,15 +37,25 @@ if(ButtonState != LastButtonState)
     }
   }
 
-  switch (mode){
-     case normalMode: {
+  switch (mode)
+  {
+     case normalMode: 
+	 {
         NormalMode();
+		delay(50);
      }
              break;
-     case movingMode:{
-        MovingMode();         
+     case movingMode:
+	 {
+        MovingMode();
      }
              break;
+	 case offMode: 
+	 {
+		 OffMode();
+		 delay(50);
+	 }
+			 break;
   }
   LastButtonState = ButtonState;
   delay(10);
@@ -78,10 +89,12 @@ void MovingMode()
     leds[idx_].w = brightness;
     }
     ring.sendPixels(NUM_LEDS, leds);
-  if (transition == true){mode = normalMode;}
+  if (transition == true){mode = offMode;}
   transition = false;  
 }
 }
+
+
 
 void NormalMode()
 { 
@@ -93,16 +106,30 @@ void NormalMode()
   transition = false;
 }
 
+void OffMode()
+{
+	setBrightness(0);
+	ring.sendPixels(NUM_LEDS, leds);
+	if (transition == true) { mode = normalMode; }
+	transition = false;
+}
+
 
 
 int getBrightnessSP(){
-  
-  int brightness = map(analogRead(INTENSITY_PIN),0,1023,255,0);
-    return brightness;
+ int brightness = 0;
+  for (size_t i = 0; i < avgfac; i++)
+    {
+      brightness += map(analogRead(INTENSITY_PIN),0,1023,255,0);
+      delayMicroseconds(100);
+    }
+    return brightness/avgfac;
 }
 
 int getPositionSP(){
-  int positionOffset = map(analogRead(TURNING_PIN),0,1023,0,16);
+
+		int positionOffset = map(analogRead(TURNING_PIN), 0, 1023, 0, 16);
+			  
   return positionOffset;
 }
 

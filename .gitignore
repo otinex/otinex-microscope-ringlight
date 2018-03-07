@@ -1,0 +1,5 @@
+Ring_Lights/Release/
+Ring_Lights/__vm/
+*.sln
+*.suo
+*.vcxproj
